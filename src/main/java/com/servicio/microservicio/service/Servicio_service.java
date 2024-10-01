@@ -14,14 +14,18 @@ import com.servicio.microservicio.repositories.Servicio_repository;
 
 @Service
 public class Servicio_service {
-
-    Servicio_repository servicio_repository;
+    @Autowired
+    private Servicio_repository servicio_repository;
     ModelMapper modelMapper;
 
-    @Autowired
+  
     public Servicio_service(Servicio_repository servicio_repository_repository, ModelMapper modelMapper) {
         this.servicio_repository = servicio_repository;
         this.modelMapper = modelMapper;
+    }
+
+    public Servicio crearServicio(Servicio servicio) {
+        return servicio_repository.save(servicio);
     }
 
     // Crear un nuevo servicio
@@ -74,13 +78,5 @@ public class Servicio_service {
             return true;
         }
         return false;
-    }
-
-     // Buscar servicios por nombre
-     public List<Servicio_dto> buscarServicioPorNombre(String nombre) {
-        List<Servicio> servicios = servicio_repository.findByNombre(nombre);
-        return servicios.stream()
-                        .map(servicio -> modelMapper.map(servicio, Servicio_dto.class))
-                        .toList();  // Devuelve una lista de DTOs
     }
 }
