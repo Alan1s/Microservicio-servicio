@@ -78,5 +78,15 @@ public class Servicio_controller {
         }
     }
 
+    // Endpoint para buscar servicios por nombre
+    @GetMapping(value = "/buscar", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Servicio_dto>> buscarServicioPorNombre(@RequestParam("nombre") String nombre) {
+        List<Servicio_dto> servicios = servicio_service.buscarServicioPorNombre(nombre);
+        if (servicios.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity<>(servicios, HttpStatus.OK);
+        }
+    }
     
 }

@@ -75,4 +75,12 @@ public class Servicio_service {
         }
         return false;
     }
+
+     // Buscar servicios por nombre
+     public List<Servicio_dto> buscarServicioPorNombre(String nombre) {
+        List<Servicio> servicios = servicio_repository.findByNombre(nombre);
+        return servicios.stream()
+                        .map(servicio -> modelMapper.map(servicio, Servicio_dto.class))
+                        .toList();  // Devuelve una lista de DTOs
+    }
 }
