@@ -1,13 +1,13 @@
-package com.servicio.mivroservicio;
+package com.servicio.microservicio;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MivroservicioApplication {
+public class MicroservicioApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MivroservicioApplication.class, args);
+		SpringApplication.run(MicroservicioApplication.class, args);
 	}
 
 }
