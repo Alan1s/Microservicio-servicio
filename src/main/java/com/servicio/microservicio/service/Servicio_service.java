@@ -12,6 +12,7 @@ import com.servicio.microservicio.dto.Servicio_dto;
 import com.servicio.microservicio.entities.Servicio;
 import com.servicio.microservicio.repositories.Servicio_repository;
 
+@Service
 public class Servicio_service {
 
     Servicio_repository servicio_repository;
@@ -73,13 +74,5 @@ public class Servicio_service {
             return true;
         }
         return false;
-    }
-
-    // Buscar un servicio por nombre
-    public List<Servicio_dto> buscarServicioPorNombre(String nombre) {
-        List<Servicio> servicios = servicio_repository.findByNombre(nombre);
-        return servicios.stream()
-                .map(servicio -> modelMapper.map(servicio, Servicio_dto.class))
-                .collect(Collectors.toList());
     }
 }

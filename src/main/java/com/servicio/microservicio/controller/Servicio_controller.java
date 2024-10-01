@@ -78,10 +78,5 @@ public class Servicio_controller {
         }
     }
 
-    // Buscar un servicio por nombre
-    @GetMapping(value = "/buscar", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Servicio_dto>> buscarServicioPorNombre(@RequestParam("nombre") String nombre) {
-        List<Servicio_dto> servicios = servicio_service.buscarServicioPorNombre(nombre);
-        return new ResponseEntity<>(servicios, HttpStatus.OK);
-    }
+    
 }
