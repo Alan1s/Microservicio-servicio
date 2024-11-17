@@ -35,4 +35,12 @@ public class Servicio {
     // Campos específicos del país de destino
     private String paisDestino;   // Nombre del país
     private String informacionPais; // Información recibida de la API (capital, población, etc.)
+
+    // Campos para mapas
+    private String ubicacion; // Para alojamientos
+    private String origen;    // Para transporte
+    private String destino;   // Para transporte
+    private String informacionMapa; // URL del mapa o ruta
+
+    private String informeClima; // Informe del clima
 }
