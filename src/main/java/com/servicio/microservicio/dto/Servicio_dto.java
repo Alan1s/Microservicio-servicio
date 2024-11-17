@@ -1,5 +1,7 @@
 package com.servicio.microservicio.dto;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,4 +20,13 @@ public class Servicio_dto {
     private String descripcion;
     private double precio;
     private String formato;
+
+    // Campos específicos para transporte
+    private String tipoTransporte;
+    private LocalDateTime fechaSalida;
+    private LocalDateTime fechaLlegada;
+    private String trayecto;
+
+    private String paisDestino;   
+    private String informacionPais;
 }

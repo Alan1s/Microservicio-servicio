@@ -1,5 +1,7 @@
 package com.servicio.microservicio.entities;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,5 +24,15 @@ public class Servicio {
     private String nombre;
     private String descripcion;
     private double precio;
-    private String formato;
+    private String formato; // Alojamiento, Transporte, etc.
+
+    // Campos específicos para transporte
+    private String tipoTransporte; // Terrestre, Aéreo, etc.
+    private LocalDateTime fechaSalida;
+    private LocalDateTime fechaLlegada;
+    private String trayecto; // Ruta del transporte
+
+    // Campos específicos del país de destino
+    private String paisDestino;   // Nombre del país
+    private String informacionPais; // Información recibida de la API (capital, población, etc.)
 }

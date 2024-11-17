@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.servicio.microservicio.dto.Servicio_dto;
 import com.servicio.microservicio.entities.Servicio;
 import com.servicio.microservicio.repositories.Servicio_repository;
+import com.servicio.microservicio.service.RestCountriesService;
 
 @Service
 public class Servicio_service {
@@ -18,7 +19,9 @@ public class Servicio_service {
     private Servicio_repository servicio_repository;
     ModelMapper modelMapper;
 
-  
+    @Autowired
+    private RestCountriesService restCountriesService;
+
     public Servicio_service(Servicio_repository servicio_repository_repository, ModelMapper modelMapper) {
         this.servicio_repository = servicio_repository;
         this.modelMapper = modelMapper;
@@ -30,10 +33,26 @@ public class Servicio_service {
 
     // Crear un nuevo servicio
     public Servicio_dto crearServicio(Servicio_dto servicioDto) {
+        // Mapea el DTO a la entidad
         Servicio servicio = modelMapper.map(servicioDto, Servicio.class);
+    
+        // Consulta la información del país de destino
+        if (servicioDto.getPaisDestino() != null && !servicioDto.getPaisDestino().isEmpty()) {
+            try {
+                String informacionPais = restCountriesService.obtenerInformacionPais(servicioDto.getPaisDestino());
+                servicio.setInformacionPais(informacionPais); // Almacena la información recibida
+            } catch (Exception e) {
+                throw new RuntimeException("Error al consultar la información del país: " + e.getMessage());
+            }
+        }
+    
+        // Guarda el servicio en la base de datos
         Servicio nuevoServicio = servicio_repository.save(servicio);
+    
+        // Mapea la entidad de nuevo al DTO y la devuelve
         return modelMapper.map(nuevoServicio, Servicio_dto.class);
     }
+    
 
     // Obtener todos los servicios
     public List<Servicio_dto> obtenerTodosLosServicios() {
@@ -58,19 +77,36 @@ public class Servicio_service {
         Servicio servicioExistente = servicio_repository.findById(id).orElse(null);
     
         if (servicioExistente != null) {
+            // Actualiza los campos básicos
             servicioExistente.setNombre(servicioDto.getNombre());
             servicioExistente.setDescripcion(servicioDto.getDescripcion());
             servicioExistente.setPrecio(servicioDto.getPrecio());
             servicioExistente.setFormato(servicioDto.getFormato());
     
+            // Verifica si el país de destino cambió
+            if (!servicioExistente.getPaisDestino().equals(servicioDto.getPaisDestino())) {
+                servicioExistente.setPaisDestino(servicioDto.getPaisDestino());
+                
+                // Consulta la nueva información del país
+                try {
+                    String informacionPais = restCountriesService.obtenerInformacionPais(servicioDto.getPaisDestino());
+                    servicioExistente.setInformacionPais(informacionPais);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error al consultar la información del país: " + e.getMessage());
+                }
+            }
+    
+            // Guarda los cambios en la base de datos
             Servicio servicioActualizado = servicio_repository.save(servicioExistente);
+    
+            // Mapea la entidad de nuevo al DTO y la devuelve
             return modelMapper.map(servicioActualizado, Servicio_dto.class);
         }
     
         return null; // Devuelve null si el servicio no fue encontrado
     }
     
-
+    
     // Eliminar un servicio por ID
     public boolean eliminarServicio(long id) {
         if (servicio_repository.existsById(id)) {
@@ -80,3 +116,4 @@ public class Servicio_service {
         return false;
     }
 }
+
