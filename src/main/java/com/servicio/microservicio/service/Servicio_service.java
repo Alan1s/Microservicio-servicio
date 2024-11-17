@@ -37,52 +37,58 @@ public class Servicio_service {
         return servicio_repository.save(servicio);
     }
 
-   // Crear un nuevo servicio
-   public Servicio_dto crearServicio(Servicio_dto servicioDto) {
-    // Mapea el DTO a la entidad
-    Servicio servicio = modelMapper.map(servicioDto, Servicio.class);
+   // Crear un nuevo servicio con las tres APIs
+    public Servicio_dto crearServicio(Servicio_dto servicioDto) {
+        // Mapea el DTO a la entidad
+        Servicio servicio = modelMapper.map(servicioDto, Servicio.class);
 
-    // Consulta la información del país (Rest Countries API)
-    if (servicioDto.getPaisDestino() != null && !servicioDto.getPaisDestino().isEmpty()) {
-        try {
-            String informacionPais = restCountriesService.obtenerInformacionPais(servicioDto.getPaisDestino());
-            servicio.setInformacionPais(informacionPais);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al consultar la información del país: " + e.getMessage());
+        // 1. Llamada a la API de Rest Countries
+        if (servicioDto.getPaisDestino() != null && !servicioDto.getPaisDestino().isEmpty()) {
+            try {
+                String informacionPais = restCountriesService.obtenerInformacionPais(servicioDto.getPaisDestino());
+                servicio.setInformacionPais(informacionPais);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al consultar la información del país: " + e.getMessage());
+            }
         }
-    }
 
-    // Consulta información del clima (Weather API)
-    if (servicioDto.getDestino() != null && !servicioDto.getDestino().isEmpty()) {
+        // 2. Llamada a la API de Google Maps
+        if (servicioDto.getFormato().equalsIgnoreCase("Alojamiento") && servicioDto.getUbicacion() != null) {
+            try {
+                String mapaUrl = googleMapsService.obtenerMapa(servicioDto.getUbicacion());
+                servicio.setInformacionMapa(mapaUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al generar el mapa: " + e.getMessage());
+            }
+        } else if (servicioDto.getFormato().equalsIgnoreCase("Transporte")
+                && servicioDto.getOrigen() != null && servicioDto.getDestino() != null) {
+            try {
+                String rutaMapaUrl = googleMapsService.obtenerRuta(servicioDto.getOrigen(), servicioDto.getDestino());
+                servicio.setInformacionMapa(rutaMapaUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al generar la ruta del mapa: " + e.getMessage());
+            }
+        }
+
+        // 3. Llamada a la API del clima si es un servicio de transporte
+    if (servicioDto.getFormato().equalsIgnoreCase("Transporte") && servicioDto.getDestino() != null) {
         try {
-            String informeClima = weatherService.obtenerClima(servicioDto.getDestino());
+            String latitud = "4.60971";  // Latitud de ejemplo
+            String longitud = "-74.08175"; // Longitud de ejemplo
+
+            // Llama al servicio del clima
+            String informeClima = weatherService.obtenerClima(latitud, longitud);
             servicio.setInformeClima(informeClima);
         } catch (Exception e) {
             throw new RuntimeException("Error al consultar el clima: " + e.getMessage());
         }
     }
+        // Guarda el servicio en la base de datos
+        Servicio nuevoServicio = servicio_repository.save(servicio);
 
-    // Integración con Google Maps (Mapas o Rutas)
-    if ("Transporte".equalsIgnoreCase(servicioDto.getFormato())) {
-        // Generar la URL de la ruta para transporte
-        if (servicioDto.getOrigen() != null && servicioDto.getDestino() != null) {
-            String rutaUrl = googleMapsService.obtenerRuta(servicioDto.getOrigen(), servicioDto.getDestino());
-            servicio.setInformacionMapa(rutaUrl); // Almacena la URL de la ruta
-        }
-    } else if ("Alojamiento".equalsIgnoreCase(servicioDto.getFormato())) {
-        // Generar la URL del mapa estático para alojamiento
-        if (servicioDto.getUbicacion() != null) {
-            String mapaUrl = googleMapsService.obtenerMapa(servicioDto.getUbicacion());
-            servicio.setInformacionMapa(mapaUrl); // Almacena la URL del mapa
-        }
+        // Mapea la entidad de vuelta al DTO y retorna
+        return modelMapper.map(nuevoServicio, Servicio_dto.class);
     }
-
-    // Guarda el servicio en la base de datos
-    Servicio nuevoServicio = servicio_repository.save(servicio);
-
-    // Mapea la entidad de nuevo al DTO y la devuelve
-    return modelMapper.map(nuevoServicio, Servicio_dto.class);
-}
 
     // Obtener todos los servicios
     public List<Servicio_dto> obtenerTodosLosServicios() {
@@ -105,15 +111,17 @@ public class Servicio_service {
     // Actualizar un servicio por ID
     public Servicio_dto actualizarServicio(long id, Servicio_dto servicioDto) {
         Servicio servicioExistente = servicio_repository.findById(id).orElse(null);
-
+    
         if (servicioExistente != null) {
             // Actualiza los campos básicos
             servicioExistente.setNombre(servicioDto.getNombre());
             servicioExistente.setDescripcion(servicioDto.getDescripcion());
             servicioExistente.setPrecio(servicioDto.getPrecio());
             servicioExistente.setFormato(servicioDto.getFormato());
-
-            // Verifica si el país de destino cambió
+            servicioExistente.setFechaSalida(servicioDto.getFechaSalida());
+            servicioExistente.setFechaLlegada(servicioDto.getFechaLlegada());
+    
+            // 1. Actualización con Rest Countries
             if (!servicioExistente.getPaisDestino().equals(servicioDto.getPaisDestino())) {
                 servicioExistente.setPaisDestino(servicioDto.getPaisDestino());
                 try {
@@ -123,34 +131,44 @@ public class Servicio_service {
                     throw new RuntimeException("Error al consultar la información del país: " + e.getMessage());
                 }
             }
-
-            // Recalcular clima y mapas si cambian los datos relevantes
-            if (servicioDto.getDestino() != null && !servicioDto.getDestino().isEmpty()) {
+    
+            // 2. Actualización con Google Maps
+            if (servicioDto.getFormato().equalsIgnoreCase("Alojamiento") && servicioDto.getUbicacion() != null) {
                 try {
-                    String informeClima = weatherService.obtenerClima(servicioDto.getDestino());
-                    servicioExistente.setInformeClima(informeClima);
-                } catch (Exception e) {
-                    throw new RuntimeException("Error al consultar el clima: " + e.getMessage());
-                }
-            }
-
-            if ("Transporte".equalsIgnoreCase(servicioDto.getFormato())) {
-                if (servicioDto.getOrigen() != null && servicioDto.getDestino() != null) {
-                    String rutaUrl = googleMapsService.obtenerRuta(servicioDto.getOrigen(), servicioDto.getDestino());
-                    servicioExistente.setInformacionMapa(rutaUrl);
-                }
-            } else if ("Alojamiento".equalsIgnoreCase(servicioDto.getFormato())) {
-                if (servicioDto.getUbicacion() != null) {
                     String mapaUrl = googleMapsService.obtenerMapa(servicioDto.getUbicacion());
                     servicioExistente.setInformacionMapa(mapaUrl);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error al generar el mapa: " + e.getMessage());
+                }
+            } else if (servicioDto.getFormato().equalsIgnoreCase("Transporte")
+                    && servicioDto.getOrigen() != null && servicioDto.getDestino() != null) {
+                try {
+                    String rutaMapaUrl = googleMapsService.obtenerRuta(servicioDto.getOrigen(), servicioDto.getDestino());
+                    servicioExistente.setInformacionMapa(rutaMapaUrl);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error al generar la ruta del mapa: " + e.getMessage());
                 }
             }
-
+    
+            // Llama a OpenWeatherMap API para obtener el clima
+        if (servicioDto.getFormato().equalsIgnoreCase("Transporte") && servicioDto.getDestino() != null) {
+            try {
+                String latitud = "4.60971";  // Latitud de ejemplo
+                String longitud = "-74.08175"; // Longitud de ejemplo
+                String informeClima = weatherService.obtenerClima(latitud, longitud);
+                servicioExistente.setInformeClima(informeClima);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al consultar el clima: " + e.getMessage());
+            }
+        }
+    
             // Guarda los cambios en la base de datos
             Servicio servicioActualizado = servicio_repository.save(servicioExistente);
+    
+            // Mapea la entidad actualizada al DTO y la retorna
             return modelMapper.map(servicioActualizado, Servicio_dto.class);
         }
-
+    
         return null; // Devuelve null si el servicio no fue encontrado
     }
     

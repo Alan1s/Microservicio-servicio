@@ -4,37 +4,44 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class WeatherService {
 
-    @Value("${weatherapi.api.key}")
+    @Value("${openweathermap.api.key}")
     private String apiKey;
 
-    private static final String WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/forecast";
+    private final RestTemplate restTemplate;
 
-    public String obtenerClima(String ciudad) {
-        // Construir la URL para la solicitud al API
-        String url = UriComponentsBuilder.fromHttpUrl(WEATHER_API_URL)
-                .queryParam("q", ciudad)
-                .queryParam("appid", apiKey)
-                .queryParam("units", "metric") // Métricas (Celsius)
-                .queryParam("lang", "es") // Idioma en español
-                .toUriString();
-
-        // Hacer la solicitud al API
-        RestTemplate restTemplate = new RestTemplate();
-        try {
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody(); // Devuelve la respuesta JSON del clima
-            } else {
-                throw new RuntimeException("Error al consultar la API del clima: " + response.getStatusCode());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error al obtener el clima: " + e.getMessage());
-        }
+    public WeatherService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
+
+    public String obtenerClima(String latitud, String longitud) {
+    String apiUrl = String.format("https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s", latitud, longitud, apiKey);
+
+    try {
+        ResponseEntity<String> response = restTemplate.getForEntity(apiUrl, String.class);
+        if (response.getStatusCode().is2xxSuccessful()) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode root = objectMapper.readTree(response.getBody());
+
+            // Extraer solo los campos necesarios
+            ObjectNode result = objectMapper.createObjectNode();
+            result.set("coord", root.get("coord"));
+            result.set("weather", root.get("weather"));
+
+            return objectMapper.writeValueAsString(result);
+        } else {
+            throw new RuntimeException("Error al obtener el clima: " + response.getStatusCode() + " - " + response.getBody());
+        }
+    } catch (Exception e) {
+        throw new RuntimeException("Error al consultar el clima: " + e.getMessage(), e);
+    }
+}
+
 }
