@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: microservicio-servicio
+  config:
+    import: configserver:http://localhost:8888
+
+google:
+  maps:
+    api:
+      key: AIzaSyCqPtZMSywDG0U80jL_yWgj25t6XFMSiiY
+
+openweathermap:
+  api:
+    key: bbc270ccdc6ee00ade4162fb88c89336
